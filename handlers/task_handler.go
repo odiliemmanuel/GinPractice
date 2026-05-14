@@ -115,6 +115,35 @@ func UpdateTask(c *gin.Context) {
 
 	c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
 
+}
+
+
+
+func DeleteTask(c *gin.Context) {
+	idStr := c.Param("id")
+
+	id, err := strconv.ParseUint(idStr, 10, 64)
+
+	if err != nil{
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	for count, task := range tasks{
+		if task.ID == uint(id){
+
+			tasks = append(tasks[:count], tasks[count +1:]...)
+
+			c.JSON(http.StatusOK, gin.H{"message": "task deleted",})
+			return
+		}
+	}
+
+	c.JSON(http.StatusNotFound, gin.H{"message": " tasks not found",})
 
 
 }
+

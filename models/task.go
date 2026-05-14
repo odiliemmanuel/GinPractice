@@ -34,3 +34,8 @@ type UpdateTaskInput struct {
 	Status      Status     `json:"status" `	
 
 }
+
+
+type DeleteTaskInput struct {
+	ID uint `json:"id" binding:"required"`
+}
