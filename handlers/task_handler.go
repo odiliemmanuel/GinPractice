@@ -24,7 +24,7 @@ func GetTasks(c *gin.Context) {
 }
 
 func CreateTask(c *gin.Context) {
-	var input models.CreatTaskInput
+	var input models.CreateTaskInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -47,6 +47,8 @@ func CreateTask(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{"data": newTask})
 }
+
+
 
 func GetTask(c *gin.Context) {
 	idStr := c.Param("id")

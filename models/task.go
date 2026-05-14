@@ -20,7 +20,7 @@ type Task struct {
 }
 
 
-type CreatTaskInput struct {
+type CreateTaskInput struct {
 	Title       string     `json:"title"   binding:"required"`
 	Description string     `json:"description"`
 }
