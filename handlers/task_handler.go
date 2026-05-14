@@ -17,11 +17,15 @@ var (
 	mu     sync.Mutex
 )
 
+
+
 func GetTasks(c *gin.Context) {
 	mu.Lock()
 	defer mu.Unlock()
 	c.JSON(http.StatusOK, gin.H{"data": tasks})
 }
+
+
 
 func CreateTask(c *gin.Context) {
 	var input models.CreateTaskInput
@@ -68,4 +72,36 @@ func GetTask(c *gin.Context) {
 		}
 	}
 	c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
+
+}
+
+
+func UpdateTask(c *gin.Context) {
+	idStr := c.Param("id")
+
+	id, err := strconv.ParseUint(idStr, 10, 64)
+
+	if err != nil{
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+
+
+	var input models.UpdateTaskInput
+
+
+	if err = c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	for 
+
+
+
 }

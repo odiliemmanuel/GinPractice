@@ -28,5 +28,9 @@ type CreateTaskInput struct {
 
 
 type UpdateTaskInput struct {
-	TaskId      string   
+
+	Title       string     `json:"title"   binding:"required"`
+	Description string     `json:"description"`
+	Status      Status     `json:"status" `	
+
 }
