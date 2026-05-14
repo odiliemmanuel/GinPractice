@@ -37,9 +37,17 @@ type UpdateTaskInput struct {
 
 
 type DeleteTaskInput struct {
-	ID uint `json:"id" binding:"required"`
+	ID    uint   `json:"id" binding:"required"`
 }
 
 type FilterTaskByStatusInput struct {
-	Status Status `json:"status" binding:"required"`
+	Status    Status   `json:"status" binding:"required"`
+}
+
+
+type PatchTaskInput struct {
+	Title       *string     `json:"title"`
+	Description *string     `json:"description"`
+	Status      *Status     `json:"status" `
+
 }
