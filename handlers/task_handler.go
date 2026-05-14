@@ -100,7 +100,20 @@ func UpdateTask(c *gin.Context) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	for 
+	for count, task := range tasks {
+		if task.ID == uint(id){
+
+			tasks[count].Title = input.Title
+			tasks[count].Description = input.Description
+			tasks[count].Status = input.Status
+
+			c.JSON(http.StatusOK, gin.H{"data": tasks[count]})
+			return
+		}
+	}
+
+
+	c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
 
 
 
