@@ -147,3 +147,27 @@ func DeleteTask(c *gin.Context) {
 
 }
 
+
+func FilterTasksByStatus(c *gin.Context) {
+	status := c.Query("status")
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	if status == ""{
+		c.JSON(http.StatusOK, gin.H{"data": tasks, })
+		return
+	}
+
+	var filteredTasks []models.Task
+
+	for _, task := range tasks {
+		if string(task.Status) == status{
+			filteredTasks = append(filteredTasks, task)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": filteredTasks})
+
+}
+

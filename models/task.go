@@ -39,3 +39,7 @@ type UpdateTaskInput struct {
 type DeleteTaskInput struct {
 	ID uint `json:"id" binding:"required"`
 }
+
+type FilterTaskByStatusInput struct {
+	Status Status `json:"status" binding:"required"`
+}
