@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"time"
+	"gorm.io/gorm"
+)
 
 type Status string
 
@@ -11,7 +14,9 @@ const (
 )
 
 
+
 type Task struct {
+	gorm.Model
 	ID          uint      `json:"id"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`

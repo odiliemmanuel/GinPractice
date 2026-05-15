@@ -14,6 +14,8 @@ type Config struct {
 	Port       string	
 }
 
+
+
 func Load() Config {
 	return Config{
 		DBHost:     getEnv("DB_HOST", "localhost"),
@@ -23,4 +25,23 @@ func Load() Config {
 		DBPassword: getEnv("DB_PASSWORD", "password"),
 		Port:       getEnv("PORT", "8080"),
 	}
+}
+
+
+
+func (c Config) DSN() string {
+	return fmt.Sprintf(
+		"host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
+		c.DBHost, c.DBPort, c.DBUser, c.DBName, c.DBPassword,
+	)
+}
+
+
+
+func getEnv(key, fallback string) string {
+	if value := os.Getenv(key); value != ""{
+		return value
+	}
+
+	return fallback
 }

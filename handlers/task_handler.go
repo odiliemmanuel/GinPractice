@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"gotask/db"
 	"gotask/models"
 
 	"github.com/gin-gonic/gin"
@@ -20,9 +21,20 @@ var (
 
 
 func GetTasks(c *gin.Context) {
-	mu.Lock()
-	defer mu.Unlock()
+	var tasks  []models.Task
+	query := db.DB.Model(&models.Task{})
+
+	if status := c.Query("status"); status != ""{
+		query = query.Where("status = ?", status)
+	}
+
+	if err := query.Find(&tasks).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"data": tasks})
+
 }
 
 
@@ -35,141 +47,94 @@ func CreateTask(c *gin.Context) {
 		return
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
 
 	newTask := models.Task{
-		ID:          nextID,
 		Title:       input.Title,
 		Description: input.Description,
 		Status:      models.StatusPending,
 		CreatedAt:   time.Now(),
 	}
 
-	nextID++
-	tasks = append(tasks, newTask)
-
+	if err := db.DB.Create(&newTask).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.JSON(http.StatusCreated, gin.H{"data": newTask})
 }
 
 
 
 func GetTask(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+	var task  []models.Task
+
+	
+	if err := db.DB.First(&task, c.Param("id")).Error;  err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
 		return
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
-
-	for _, task := range tasks {
-		if task.ID == uint(id) {
-			c.JSON(http.StatusOK, gin.H{"data": task})
-			return
-		}
-	}
-	c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
+	
+	c.JSON(http.StatusOK, gin.H{"data": task})
 
 }
 
 
 func UpdateTask(c *gin.Context) {
-	idStr := c.Param("id")
+	var task  []models.Task
 
-	id, err := strconv.ParseUint(idStr, 10, 64)
-
-	if err != nil{
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+	if err := db.DB.First(&task, c.Param("id")).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
 		return
 	}
 
-
-
 	var input models.UpdateTaskInput
-
-
-	if err = c.ShouldBindJSON(&input); err != nil {
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-
-	mu.Lock()
-	defer mu.Unlock()
-
-	for count, task := range tasks {
-		if task.ID == uint(id){
-
-			tasks[count].Title = input.Title
-			tasks[count].Description = input.Description
-			tasks[count].Status = input.Status
-
-			c.JSON(http.StatusOK, gin.H{"data": tasks[count]})
-			return
-		}
-	}
-
-
-	c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
+	db.DB.Model(&task).Updates(input)
+	c.JSON(http.StatusOK, gin.H{"data": task})
 
 }
 
 
 
 func DeleteTask(c *gin.Context) {
-	idStr := c.Param("id")
+	var task  []models.Task
 
-	id, err := strconv.ParseUint(idStr, 10, 64)
-
-	if err != nil{
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := db.DB.First(&task, c.Param("id")).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error" : "task not found"})
 		return
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
-
-	for count, task := range tasks{
-		if task.ID == uint(id){
-
-			tasks = append(tasks[:count], tasks[count +1:]...)
-
-			c.JSON(http.StatusOK, gin.H{"message": "task deleted",})
-			return
-		}
-	}
-
-	c.JSON(http.StatusNotFound, gin.H{"message": " tasks not found",})
-
-
+	db.DB.Delete(&task)
+	c.JSON(http.StatusNoContent, nil)
 }
 
 
 func FilterTasksByStatus(c *gin.Context) {
+
 	status := c.Query("status")
 
-	mu.Lock()
-	defer mu.Unlock()
+	var tasks []models.Task
+	query := db.DB.Model(&models.Task{})
 
-	if status == ""{
-		c.JSON(http.StatusOK, gin.H{"data": tasks, })
+	if status != ""{
+		query = query.Where("status = ?", status)
+
+	}
+
+	if err := query.Find(&tasks).Error; err != nil{
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), })
 		return
 	}
 
-	var filteredTasks []models.Task
-
-	for _, task := range tasks {
-		if string(task.Status) == status{
-			filteredTasks = append(filteredTasks, task)
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": filteredTasks})
-
+	c.JSON(http.StatusOK, gin.H{"data": tasks,})
+	
 }
+
+
 
 func PatchTask(c *gin.Context) {
 	idStr := c.Param("id")
@@ -215,6 +180,5 @@ func PatchTask(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusNotFound, gin.H{
-		"error": "task not found",})
+	c.JSON(http.StatusNotFound, gin.H{"error": "task not found",})
 }
