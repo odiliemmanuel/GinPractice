@@ -66,7 +66,8 @@ func CreateTask(c *gin.Context) {
 
 
 func GetTask(c *gin.Context) {
-	var task  []models.Task
+	var task  models.Task
+	user, _ := c.MustGet("currentUser").(models.User)
 
 
 	if err := db.DB.First(&task, c.Param("id")).Error;  err != nil {
@@ -74,8 +75,6 @@ func GetTask(c *gin.Context) {
 		return
 	}
 
-	user, _ := c.MustGet("currentUser").(models.User)
-	db.DB.Where("user_id = ?", user.ID).Find(&task)
 
 	if task.UserID != user.ID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "you don't have access to this task"})
@@ -90,14 +89,22 @@ func GetTask(c *gin.Context) {
 
 
 func UpdateTask(c *gin.Context) {
-	var task  []models.Task
+	var task  models.Task
+	user, _ := c.MustGet("currentUser").(models.User)
 
 	if err := db.DB.First(&task, c.Param("id")).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
 		return
 	}
 
+	if task.UserID != user.ID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "you don't have access to this task"})
+		return
+	}
+
+
 	var input models.UpdateTaskInput
+
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -114,7 +121,6 @@ func GetAllTasks(c *gin.Context) {
 
 	query := db.DB.Model(&models.Task{})
 
-	// Filter by status
 	if status := c.Query("status"); status != "" {
 		query = query.Where("status = ?", status)
 	}
@@ -142,9 +148,7 @@ func GetAllTasks(c *gin.Context) {
 	query = query.Offset(offset).Limit(limit)
 
 	if err := query.Find(&tasks).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -157,10 +161,16 @@ func GetAllTasks(c *gin.Context) {
 
 
 func DeleteTask(c *gin.Context) {
-	var task  []models.Task
+	var task  models.Task
+	user, _ := c.MustGet("currentUser").(models.User)
 
 	if err := db.DB.First(&task, c.Param("id")).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error" : "task not found"})
+		return
+	}
+
+	if task.UserID != user.ID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "you don't have access to this task"})
 		return
 	}
 
@@ -195,48 +205,31 @@ func FilterTasksByStatus(c *gin.Context) {
 
 
 func PatchTask(c *gin.Context) {
-	idStr := c.Param("id")
+	var task models.Task
+	user, _ := c.MustGet("currentUser").(models.User)
 
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid id",
-		})
+	if err := db.DB.First(&task, c.Param("id")).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
 		return
 	}
+
+	if task.UserID != user.ID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "you don't have access to this task"})
+		return
+	}
+
 
 	var input models.PatchTaskInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error(),})
 		return
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
-
-	for i, task := range tasks {
-		if task.ID == uint(id) {
-
-			if input.Title != nil {
-				tasks[i].Title = *input.Title
-			}
-
-			if input.Description != nil {
-				tasks[i].Description = *input.Description
-			}
-
-			if input.Status != nil {
-				tasks[i].Status = *input.Status
-			}
-
-			c.JSON(http.StatusOK, gin.H{
-				"data": tasks[i],
-			})
-			return
-		}
+	
+	if err := db.DB.Model(&task).Updates(input).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusNotFound, gin.H{"error": "task not found",})
+	c.JSON(http.StatusOK, gin.H{"data": task})
 }
