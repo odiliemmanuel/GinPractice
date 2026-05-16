@@ -19,11 +19,11 @@ func SetupRoutes(r *gin.Engine) {
 	tasks.Use(middleware.RequireAuth)
 
 	{
-		tasks.GET("/tasks", handlers.GetTasks)
+		tasks.GET("", handlers.GetTasks)
 
 		tasks.GET("/tasks/:id", handlers.GetTask)
 
-		tasks.POST("/tasks", handlers.CreateTask)
+		tasks.POST("", handlers.CreateTask)
 
 		tasks.PUT("/tasks/:id", handlers.UpdateTask)
 

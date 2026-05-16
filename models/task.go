@@ -18,7 +18,7 @@ const (
 type Task struct {
 	gorm.Model
 	ID          uint      `gorm:"primaryKey"`
-	UserID      uint      `json:"userId" gorm:"not null"`
+	UserID      uint      `json:"userId"`
 	Title       string    
 	Description string    
 	Status      Status 
