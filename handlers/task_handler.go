@@ -52,7 +52,9 @@ func CreateTask(c *gin.Context) {
 		Title:       input.Title,
 		Description: input.Description,
 		Status:      models.StatusPending,
+		DueDate:     input.DueDate,
 		CreatedAt:   time.Now(),
+		
 	}
 
 	if err := db.DB.Create(&newTask).Error; err != nil {
@@ -99,6 +101,52 @@ func UpdateTask(c *gin.Context) {
 }
 
 
+func GetAllTasks(c *gin.Context) {
+	var tasks []models.Task
+
+	query := db.DB.Model(&models.Task{})
+
+	// Filter by status
+	if status := c.Query("status"); status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	// Pagination defaults
+	page := 1
+	limit := 10
+
+	// Read query params
+	if p := c.Query("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil {
+			page = parsed
+		}
+	}
+
+	if l := c.Query("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil {
+			limit = parsed
+		}
+	}
+
+	offset := (page - 1) * limit
+
+	// Apply pagination
+	query = query.Offset(offset).Limit(limit)
+
+	if err := query.Find(&tasks).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":  tasks,
+		"page":  page,
+		"limit": limit,
+	})
+}
+
 
 func DeleteTask(c *gin.Context) {
 	var task  []models.Task
@@ -111,6 +159,8 @@ func DeleteTask(c *gin.Context) {
 	db.DB.Delete(&task)
 	c.JSON(http.StatusNoContent, nil)
 }
+
+
 
 
 func FilterTasksByStatus(c *gin.Context) {

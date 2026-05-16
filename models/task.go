@@ -17,26 +17,29 @@ const (
 
 type Task struct {
 	gorm.Model
-	ID          uint      `json:"id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Status      Status    `json:"status"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          uint      `gorm:"primaryKey"`
+	Title       string    
+	Description string    
+	Status      Status 
+	DueDate     *time.Time   
+	CreatedAt   time.Time 
 }
 
 
 type CreateTaskInput struct {
-	Title       string     `json:"title"   binding:"required"`
+	Title       string     `json:"title"`
 	Description string     `json:"description"`
+	DueDate	 *time.Time    `json:"dueDate"`
 }
 
 
 
 type UpdateTaskInput struct {
 
-	Title       string     `json:"title"   binding:"required"`
+	Title       string     `json:"title"`
 	Description string     `json:"description"`
 	Status      Status     `json:"status" `	
+	DueDate	 *time.Time    `json:"dueDate"`
 
 }
 
@@ -53,6 +56,7 @@ type FilterTaskByStatusInput struct {
 type PatchTaskInput struct {
 	Title       *string     `json:"title"`
 	Description *string     `json:"description"`
-	Status      *Status     `json:"status" `
+	Status      *Status     `json:"status"`
+	DueDate	 *time.Time    `json:"dueDate"`
 
 }

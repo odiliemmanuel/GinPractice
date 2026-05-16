@@ -7,18 +7,17 @@ import (
 )
 
 func SetupRoutes(r *gin.Engine) {
-	api := r.Group("/api/v1")
-	{
-		tasks := api.Group("/tasks")
-		
-		{
+	
+	r.GET("/tasks", handlers.GetTasks)
 
-			tasks.GET("", handlers.GetTasks)
-			tasks.POST("", handlers.CreateTask)
-			tasks.GET("/:id", handlers.GetTask)
-			tasks.PUT("/:id", handlers.UpdateTask)
-			tasks.PATCH("/:id", handlers.PatchTask)
-		}
-	}
+	r.GET("/tasks/:id", handlers.GetTask)
+
+	r.POST("/tasks", handlers.CreateTask)
+
+	r.PUT("/tasks/:id", handlers.UpdateTask)
+
+	r.PATCH("/tasks/:id", handlers.PatchTask)
+
+	r.DELETE("/tasks/:id", handlers.DeleteTask)
 
 }
