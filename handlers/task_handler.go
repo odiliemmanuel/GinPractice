@@ -87,33 +87,58 @@ func GetTask(c *gin.Context) {
 
 }
 
-
 func UpdateTask(c *gin.Context) {
-	var task  models.Task
+	var task models.Task
 	user, _ := c.MustGet("currentUser").(models.User)
 
+	// 1. Find the task
 	if err := db.DB.First(&task, c.Param("id")).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
 		return
 	}
 
+	// 2. Enforce user ownership
 	if task.UserID != user.ID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "you don't have access to this task"})
 		return
 	}
 
-
+	// 3. Bind incoming JSON
 	var input models.UpdateTaskInput
-
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	db.DB.Model(&task).Updates(input)
-	c.JSON(http.StatusOK, gin.H{"data": task})
+	// 4. Validate Status Enum
+	if input.Status != "" {
+		isValid := false
+		allowedStatuses := []string{"pending", "in_progress", "done"}
 
+		for _, s := range allowedStatuses {
+			if string(input.Status) == s {
+				isValid = true
+				break
+			}
+		}
+
+		if !isValid {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{
+				"error": "invalid status value. Allowed choices are: 'pending', 'in_progress', 'done'",
+			})
+			return
+		}
+	}
+
+	// 5. Save changes to DB
+	if err := db.DB.Model(&task).Updates(input).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": task})
 }
+
 
 
 func GetAllTasks(c *gin.Context) {

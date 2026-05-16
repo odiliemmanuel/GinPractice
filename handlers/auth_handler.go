@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"errors"
 	"os"
 	"time"
 
@@ -79,5 +80,68 @@ func LoginUser(c *gin.Context){
 	c.JSON(http.StatusOK, gin.H{"token": signed})
 
 
+}
 
+var jwtSecret = []byte("your_secret_key")
+
+type RefreshTokenRequest struct {
+	Token string `json:"token" binding:"required"`
+}
+
+func RefreshToken(c *gin.Context) {
+	var input RefreshTokenRequest
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Parse the token, ignoring expiration constraints explicitly
+	token, err := jwt.Parse(input.Token, func(t *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	}, jwt.WithExpirationRequired())
+
+	// Validate errors safely
+	if err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token payload structure"})
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unable to extract claims"})
+		return
+	}
+
+	// Fetch standard claim numeric dates safely
+	expFloat, ok := claims["exp"].(float64)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid metadata parameters"})
+		return
+	}
+	
+	expiredAt := time.Unix(int64(expFloat), 0)
+
+	// Max allowable Grace Period Window: 7 days
+	if time.Since(expiredAt) > (7 * 24 * time.Hour) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "token grace window has closed, please reauthenticate"})
+		return
+	}
+
+	// Generate and issue a new 24-Hour Token
+	newClaims := jwt.MapClaims{
+		"sub": claims["sub"], // User ID
+		"exp": time.Now().Add(24 * time.Hour).Unix(),
+		"iat": time.Now().Unix(),
+	}
+
+	newToken := jwt.NewWithClaims(jwt.SigningMethodHS256, newClaims)
+	tokenString, err := newToken.SignedString(jwtSecret)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate a new token token string"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"token": tokenString,
+	})
 }

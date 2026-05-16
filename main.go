@@ -5,6 +5,7 @@ import (
 	"log"
 	"gotask/config"
 	"gotask/db"
+	"gotask/middleware"
 
 	"github.com/joho/godotenv"
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,9 @@ func main() {
 	db.Connect(cfg)
 
 	r := gin.Default()
+
+	r.Use(middleware.Logger())
+	r.Use(gin.Recovery())
 
 	routes.SetupRoutes(r)
 
