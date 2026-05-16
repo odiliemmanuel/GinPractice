@@ -2,22 +2,37 @@ package routes
 
 import (
 	"gotask/handlers"
-
+	"gotask/middleware"
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRoutes(r *gin.Engine) {
+	api := r.Group("api/v1")
+
+	auth := api.Group("/auth")
+	{
+		auth.POST("/register", handlers.RegisterUser)
+		auth.POST("/login", handlers.LoginUser)
+	}
+
+	tasks := api.Group("/tasks")
+	tasks.Use(middleware.RequireAuth)
+
+	{
+		tasks.GET("/tasks", handlers.GetTasks)
+
+		tasks.GET("/tasks/:id", handlers.GetTask)
+
+		tasks.POST("/tasks", handlers.CreateTask)
+
+		tasks.PUT("/tasks/:id", handlers.UpdateTask)
+
+		tasks.PATCH("/tasks/:id", handlers.PatchTask)
+
+		tasks.DELETE("/tasks/:id", handlers.DeleteTask)
+	}
 	
-	r.GET("/tasks", handlers.GetTasks)
-
-	r.GET("/tasks/:id", handlers.GetTask)
-
-	r.POST("/tasks", handlers.CreateTask)
-
-	r.PUT("/tasks/:id", handlers.UpdateTask)
-
-	r.PATCH("/tasks/:id", handlers.PatchTask)
-
-	r.DELETE("/tasks/:id", handlers.DeleteTask)
+	
 
 }
+

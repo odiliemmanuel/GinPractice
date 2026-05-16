@@ -44,7 +44,7 @@ func RegisterUser(c*gin.Context){
 }
 
 
-func LOginUser(c *gin.Context){
+func LoginUser(c *gin.Context){
 	var input models.LoginInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {

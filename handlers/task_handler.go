@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/http"
 	"strconv"
-	"sync"
 	"time"
 
 	"gotask/db"
@@ -12,21 +11,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var (
-	tasks  []models.Task
-	nextID uint = 1
-	mu     sync.Mutex
-)
+
 
 
 
 func GetTasks(c *gin.Context) {
 	var tasks  []models.Task
-	query := db.DB.Model(&models.Task{})
+	user, _ := c.MustGet("currentUser").(models.User)
+
+	query := db.DB.Where("user_id = ?", user.ID).Find(&tasks)
 
 	if status := c.Query("status"); status != ""{
 		query = query.Where("status = ?", status)
 	}
+	
 
 	if err := query.Find(&tasks).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -47,6 +45,7 @@ func CreateTask(c *gin.Context) {
 		return
 	}
 
+	user, _ := c.MustGet("currentUser").(models.User)
 
 	newTask := models.Task{
 		Title:       input.Title,
@@ -54,7 +53,7 @@ func CreateTask(c *gin.Context) {
 		Status:      models.StatusPending,
 		DueDate:     input.DueDate,
 		CreatedAt:   time.Now(),
-		
+		UserID:      user.ID,
 	}
 
 	if err := db.DB.Create(&newTask).Error; err != nil {
@@ -69,11 +68,20 @@ func CreateTask(c *gin.Context) {
 func GetTask(c *gin.Context) {
 	var task  []models.Task
 
-	
+
 	if err := db.DB.First(&task, c.Param("id")).Error;  err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
 		return
 	}
+
+	user, _ := c.MustGet("currentUser").(models.User)
+	db.DB.Where("user_id = ?", user.ID).Find(&task)
+
+	if task.UserID != user.ID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "you don't have access to this task"})
+		return
+	}
+	
 
 	
 	c.JSON(http.StatusOK, gin.H{"data": task})
