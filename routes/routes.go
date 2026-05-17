@@ -9,7 +9,6 @@ import (
 func SetupRoutes(r *gin.Engine) {
 	api := r.Group("api/v1")
 
-	fmt.Printl("hello")
 
 	auth := api.Group("/auth")
 	{
