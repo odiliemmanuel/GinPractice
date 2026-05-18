@@ -31,6 +31,4 @@ func main() {
 	routes.SetupRoutes(r)
 
 	r.Run(":" + cfg.Port)
-
 }
-
